@@ -9,146 +9,79 @@ import urllib.parse
 # --------------------------------------------------------------------------------
 st.set_page_config(page_title="StreamScout India", page_icon="🎬", layout="centered")
 
-# Hide Streamlit's default header/footer and make background transparent
-st.markdown("""
-    <style>
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
-    .stApp {
-        background: transparent !important;
-    }
-    /* Style the native Streamlit text input to match the theme */
-    div[data-baseweb="input"] {
-        background-color: rgba(42, 28, 61, 0.4) !important;
-        border-radius: 1rem !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        color: white !important;
-    }
-    div[data-baseweb="input"] input {
-        color: white !important;
-    }
-    </style>
-""", unsafe_allow_html=True)
-
 # Secure API Keys
 TMDB_API_KEY = st.secrets["TMDB_API_KEY"]
 GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
 
-# Configure Gemini
 genai.configure(api_key=GEMINI_API_KEY)
 
 # --------------------------------------------------------------------------------
-# 2. HTML & TAILWIND TEMPLATES (From your design)
+# 2. RAW CSS (Replacing the blocked Tailwind Script)
 # --------------------------------------------------------------------------------
-GLOBAL_HTML = """
-<!DOCTYPE html><html class="dark" lang="en"><head>
-    <link href="https://fonts.googleapis.com" rel="preconnect">
-    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
-    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;700;900&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <script>
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: {
-                        primary: "#7f13ec",
-                        "primary-content": "#ffffff",
-                        "background-light": "#f7f6f8",
-                        "background-dark": "#191022",
-                        "surface-glass": "rgba(42, 28, 61, 0.4)",
-                        "surface-glass-border": "rgba(255, 255, 255, 0.1)",
-                        teal: { 400: '#2dd4bf', 500: '#14b8a6' }
-                    },
-                    fontFamily: { display: ["Be Vietnam Pro", "sans-serif"] },
-                },
-            },
-        }
-    </script>
-    <style>
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        body { background-color: #191022 !important; color: white !important; }
-    </style>
-</head>
-<body class="bg-background-dark font-display text-slate-100 antialiased overflow-x-hidden relative selection:bg-teal-400 selection:text-background-dark">
-    <div class="fixed inset-0 overflow-hidden pointer-events-none z-[-1]">
-        <div class="absolute -top-[10%] -left-[10%] w-[50%] h-[50%] rounded-full bg-primary/20 blur-[120px] mix-blend-screen opacity-60"></div>
-        <div class="absolute top-[20%] right-[10%] w-[40%] h-[60%] rounded-full bg-teal-500/10 blur-[100px] mix-blend-screen opacity-50"></div>
-        <div class="absolute -bottom-[20%] left-[20%] w-[60%] h-[50%] rounded-full bg-primary/10 blur-[130px] mix-blend-screen opacity-40"></div>
-    </div>
+st.markdown("""
+<style>
+    /* Hide Default Streamlit Elements */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
     
-    <header class="flex items-center justify-between whitespace-nowrap px-8 py-6 w-full max-w-7xl mx-auto">
-        <div class="flex items-center gap-3 group cursor-pointer">
-            <div class="size-10 bg-gradient-to-br from-primary to-teal-400 rounded-lg flex items-center justify-center shadow-lg shadow-primary/20">
-                <span class="material-symbols-outlined text-white text-[28px]">movie_filter</span>
-            </div>
-            <h2 class="text-white text-2xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">StreamScout</h2>
-        </div>
-    </header>
-</body></html>
-"""
+    /* App Background */
+    .stApp {
+        background-color: #191022 !important;
+        color: white !important;
+        font-family: 'Inter', sans-serif;
+    }
+    
+    /* Ambient Glowing Blobs */
+    .blob1 { position: fixed; top: -10%; left: -10%; width: 50vw; height: 50vh; border-radius: 50%; background-color: rgba(127, 19, 236, 0.2); filter: blur(120px); mix-blend-mode: screen; z-index: -1; pointer-events: none; }
+    .blob2 { position: fixed; top: 20%; right: 10%; width: 40vw; height: 60vh; border-radius: 50%; background-color: rgba(20, 184, 166, 0.1); filter: blur(100px); mix-blend-mode: screen; z-index: -1; pointer-events: none; }
+    .blob3 { position: fixed; bottom: -20%; left: 20%; width: 60vw; height: 50vh; border-radius: 50%; background-color: rgba(127, 19, 236, 0.1); filter: blur(130px); mix-blend-mode: screen; z-index: -1; pointer-events: none; }
 
-GLASS_CARD_TEMPLATE = """
-<div class="w-full backdrop-blur-2xl bg-surface-glass border border-surface-glass-border rounded-[2.5rem] shadow-2xl p-6 md:p-8 flex flex-col gap-8 mt-4 overflow-hidden relative">
-    <div class="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
-    <div class="flex flex-col lg:flex-row gap-8 items-start relative z-10">
-        <div class="w-full lg:w-1/3 shrink-0">
-            <div class="aspect-[2/3] w-full rounded-2xl overflow-hidden shadow-2xl shadow-black/50 relative group">
-                <div class="w-full h-full bg-cover bg-center transition-transform duration-700 group-hover:scale-105" style="background-image: url('{poster_url}');"></div>
-                <div class="absolute top-4 left-4 z-20">
-                    <span class="px-3 py-1 bg-black/40 backdrop-blur-md border border-white/10 rounded-lg text-xs font-bold text-white uppercase tracking-wider">{status_badge}</span>
-                </div>
-            </div>
-        </div>
-        <div class="flex flex-col flex-1 py-2 gap-6">
-            <div class="space-y-1">
-                <h2 class="text-4xl md:text-5xl font-black text-white leading-[1.1] tracking-tight">{title}</h2>
-                <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm md:text-base text-slate-300 font-medium pt-2">
-                    <span class="flex items-center gap-1 text-teal-400">
-                        <span class="material-symbols-outlined text-[20px] fill-current">star</span>
-                        {rating} TMDb
-                    </span>
-                    <span class="size-1 rounded-full bg-slate-500"></span>
-                    <span>{year}</span>
-                    <span class="size-1 rounded-full bg-slate-500"></span>
-                    <span>{duration}</span>
-                    <span class="size-1 rounded-full bg-slate-500"></span>
-                    <span>{genres}</span>
-                </div>
-            </div>
-            <p class="text-slate-300 text-lg leading-relaxed max-w-2xl font-light">{overview}</p>
-            <div class="w-full h-px bg-gradient-to-r from-transparent via-surface-glass-border to-transparent my-2"></div>
-            <div class="flex flex-col gap-3">
-                <p class="text-sm text-slate-400 font-medium uppercase tracking-widest">Available in India (IN)</p>
-                <div class="flex gap-3 overflow-x-auto no-scrollbar py-2 mask-linear-fade">
-                    {providers_html}
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-"""
+    /* Streamlit Input Styling */
+    div[data-baseweb="input"] { background-color: rgba(42, 28, 61, 0.6) !important; border-radius: 1rem !important; border: 1px solid rgba(255, 255, 255, 0.1) !important; }
+    div[data-baseweb="input"] input { color: white !important; padding: 1rem !important; font-size: 1.1rem !important; }
 
-PROVIDER_PILL_TEMPLATE = """
-<button class="flex items-center gap-3 pl-2 pr-5 py-2 rounded-full bg-black/40 border border-white/5 hover:bg-black/60 hover:border-white/20 transition-all cursor-pointer whitespace-nowrap group/service">
-    <div class="size-8 rounded-full bg-black flex items-center justify-center text-white overflow-hidden">
-        <img src="{logo_url}" class="w-full h-full object-cover" alt="{name}">
-    </div>
-    <span class="text-slate-200 font-medium text-sm group-hover/service:text-white">{name}</span>
-</button>
-"""
+    /* Glass Card Container */
+    .glass-card {
+        backdrop-filter: blur(40px); background-color: rgba(42, 28, 61, 0.4);
+        border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 2rem;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        padding: 2rem; display: flex; gap: 2rem; margin-top: 1rem; position: relative; overflow: hidden;
+    }
+    @media (max-width: 768px) { .glass-card { flex-direction: column; } }
+    
+    /* Poster */
+    .glass-poster-container { flex-shrink: 0; width: 33%; border-radius: 1rem; overflow: hidden; position: relative; }
+    @media (max-width: 768px) { .glass-poster-container { width: 100%; } }
+    .glass-poster { width: 100%; height: auto; display: block; border-radius: 1rem; }
+    .status-badge { position: absolute; top: 1rem; left: 1rem; padding: 0.25rem 0.75rem; background: rgba(0,0,0,0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); border-radius: 0.5rem; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; color: white; }
+    
+    /* Text Details */
+    .card-details { flex: 1; display: flex; flex-direction: column; gap: 1rem; }
+    .card-title { font-size: 2.5rem; font-weight: 900; line-height: 1.1; margin: 0; color: white; }
+    .meta-row { display: flex; flex-wrap: wrap; gap: 1rem; font-size: 0.9rem; color: #cbd5e1; align-items: center; font-weight: 500;}
+    .dot { width: 4px; height: 4px; border-radius: 50%; background-color: #64748b; }
+    .card-overview { font-size: 1.1rem; line-height: 1.6; color: #cbd5e1; font-weight: 300; margin: 0; }
+    .divider { width: 100%; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent); margin: 1rem 0; }
+    
+    /* Provider Pills */
+    .provider-row { display: flex; gap: 0.75rem; overflow-x: auto; padding-bottom: 0.5rem; }
+    .provider-row::-webkit-scrollbar { display: none; }
+    .provider-pill { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 1.25rem 0.5rem 0.5rem; border-radius: 9999px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); color: #e2e8f0; font-size: 0.875rem; font-weight: 600; white-space: nowrap; }
+    .provider-img { width: 2rem; height: 2rem; border-radius: 50%; object-fit: cover; }
+    
+    /* Headers */
+    .main-title { font-size: 3rem; font-weight: 800; text-align: center; margin-top: 1rem; margin-bottom: 0.5rem; color: white;}
+    .sub-title { font-size: 1.125rem; color: #94a3b8; text-align: center; margin-bottom: 2rem; }
+    .highlight { color: #2dd4bf; }
+    
+    .not-available { color: #f87171; font-weight: 500; background: rgba(248, 113, 113, 0.1); padding: 0.5rem 1rem; border-radius: 0.5rem; border: 1px solid rgba(248, 113, 113, 0.2); display: inline-block;}
+</style>
 
-NOT_AVAILABLE_TEMPLATE = """
-<span class="text-red-400 font-medium text-base bg-red-400/10 px-4 py-2 rounded-lg border border-red-400/20">
-    Not currently available to stream legally in India.
-</span>
-"""
-
-# Inject global styles and head
-st.markdown(GLOBAL_HTML, unsafe_allow_html=True)
+<div class="blob1"></div>
+<div class="blob2"></div>
+<div class="blob3"></div>
+""", unsafe_allow_html=True)
 
 # --------------------------------------------------------------------------------
 # 3. STATE MANAGEMENT
@@ -160,32 +93,19 @@ def reset_selection():
     st.session_state.selected_media = None
 
 # --------------------------------------------------------------------------------
-# 4. CORE LOGIC (GEMINI + TMDB)
+# 4. CORE LOGIC
 # --------------------------------------------------------------------------------
 def analyze_intent(query):
-    """Uses Gemini to route the intent of the search query."""
     prompt = f"""
-    Analyze the following search query for an OTT search engine. 
-    Return a strictly formatted JSON object with no markdown wrappers.
-    Schema:
-    {{
-      "title": "Cleaned title",
-      "type": "movie" | "tv" | "multi",
-      "season": <integer or null if no season mentioned>,
-      "is_exact": <true if user is asking for a precise title (e.g., 'Breaking Bad', 'Panchayat season 2'), false if ambiguous (e.g., 'Batman', 'action movies')>
-    }}
+    Analyze the search query for an OTT search engine. Return strictly JSON.
+    Schema: {{"title": "Cleaned title", "type": "movie" | "tv" | "multi", "season": <int or null>, "is_exact": <bool>}}
     Query: "{query}"
     """
     model = genai.GenerativeModel('gemini-1.5-flash')
     response = model.generate_content(prompt, generation_config={"response_mime_type": "application/json"})
-    
-    # Clean the AI output just in case it added markdown ticks
     raw_text = response.text.strip()
-    if raw_text.startswith("```json"):
-        raw_text = raw_text[7:-3].strip()
-    elif raw_text.startswith("```"):
-        raw_text = raw_text[3:-3].strip()
-        
+    if raw_text.startswith("```json"): raw_text = raw_text[7:-3].strip()
+    elif raw_text.startswith("```"): raw_text = raw_text[3:-3].strip()
     return json.loads(raw_text)
 
 def search_tmdb(title, media_type):
@@ -199,10 +119,8 @@ def get_tmdb_details(media_id, media_type):
     return requests.get(url).json()
 
 def get_tmdb_providers(media_id, media_type, season=None):
-    if season:
-        url = f"https://api.themoviedb.org/3/tv/{media_id}/season/{season}/watch/providers?api_key={TMDB_API_KEY}"
-    else:
-        url = f"https://api.themoviedb.org/3/{media_type}/{media_id}/watch/providers?api_key={TMDB_API_KEY}"
+    if season: url = f"https://api.themoviedb.org/3/tv/{media_id}/season/{season}/watch/providers?api_key={TMDB_API_KEY}"
+    else: url = f"https://api.themoviedb.org/3/{media_type}/{media_id}/watch/providers?api_key={TMDB_API_KEY}"
     res = requests.get(url).json()
     results = res.get("results", {})
     return results.get("IN", {}) if isinstance(results, dict) else {}
@@ -221,8 +139,7 @@ def render_glass_card(media_id, media_type, season=None):
     providers = get_tmdb_providers(media_id, media_type, season)
     
     title = details.get("title") or details.get("name")
-    if season:
-        title += f" (Season {season})"
+    if season: title += f" (Season {season})"
         
     poster_path = details.get("poster_path")
     poster_url = f"https://image.tmdb.org/t/p/w780{poster_path}" if poster_path else "https://via.placeholder.com/500x750?text=No+Poster"
@@ -239,17 +156,11 @@ def render_glass_card(media_id, media_type, season=None):
         status_badge = "TV Show"
         
     genres = ", ".join([g["name"] for g in details.get("genres", [])[:2]])
+    overview = details.get("overview", "No overview available.").replace("{", "(").replace("}", ")")
     
-    # Strip rogue braces from overview to prevent formatting crashes
-    raw_overview = details.get("overview", "No overview available.")
-    overview = raw_overview.replace("{", "(").replace("}", ")")
-    
-    # Fallback safety for API list logic
     provider_list = providers.get("flatrate") or []
     if not provider_list:
-        rent_list = providers.get("rent") or []
-        buy_list = providers.get("buy") or []
-        provider_list = rent_list + buy_list
+        provider_list = (providers.get("rent") or []) + (providers.get("buy") or [])
         
     seen = set()
     unique_providers = []
@@ -259,90 +170,81 @@ def render_glass_card(media_id, media_type, season=None):
             unique_providers.append(p)
             
     if not unique_providers:
-        providers_html = NOT_AVAILABLE_TEMPLATE
+        providers_html = '<div class="not-available">Not currently available to stream legally in India.</div>'
     else:
         providers_html = ""
         for p in unique_providers:
             logo_url = f"https://image.tmdb.org/t/p/original{p['logo_path']}"
-            providers_html += PROVIDER_PILL_TEMPLATE.format(
-                logo_url=logo_url, 
-                name=p["provider_name"]
-            )
+            providers_html += f"""
+            <div class="provider-pill">
+                <img src="{logo_url}" class="provider-img" alt="{p['provider_name']}">
+                <span>{p['provider_name']}</span>
+            </div>
+            """
             
-    final_html = GLASS_CARD_TEMPLATE.format(
-        poster_url=poster_url,
-        status_badge=status_badge,
-        title=title,
-        rating=rating,
-        year=year,
-        duration=duration,
-        genres=genres,
-        overview=overview,
-        providers_html=providers_html
-    )
+    final_html = f"""
+    <div class="glass-card">
+        <div class="glass-poster-container">
+            <img src="{poster_url}" class="glass-poster">
+            <span class="status-badge">{status_badge}</span>
+        </div>
+        <div class="card-details">
+            <h2 class="card-title">{title}</h2>
+            <div class="meta-row">
+                <span class="highlight">⭐ {rating} TMDb</span>
+                <div class="dot"></div><span>{year}</span>
+                <div class="dot"></div><span>{duration}</span>
+                <div class="dot"></div><span>{genres}</span>
+            </div>
+            <p class="card-overview">{overview}</p>
+            <div class="divider"></div>
+            <p style="color: #94a3b8; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0;">Available in India (IN)</p>
+            <div class="provider-row">
+                {providers_html}
+            </div>
+        </div>
+    </div>
+    """
     st.markdown(final_html, unsafe_allow_html=True)
 
 # --------------------------------------------------------------------------------
 # 6. MAIN APP FLOW
 # --------------------------------------------------------------------------------
 st.markdown("""
-<div class="w-full max-w-3xl mx-auto flex flex-col gap-4 items-center z-20 mt-10 mb-6 text-center">
-    <h1 class="text-4xl md:text-5xl font-bold text-white tracking-tight">
-        Find your next <span class="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-primary">obsession</span>
-    </h1>
-    <p class="text-slate-400 text-lg">Search millions of movies and TV shows in India.</p>
-</div>
+    <div class="main-title">Find your next <span class="highlight">obsession</span></div>
+    <div class="sub-title">Search millions of movies and TV shows in India.</div>
 """, unsafe_allow_html=True)
 
-query = st.text_input("Enter a movie or show...", placeholder="e.g. Dune, Panchayat season 2, Batman...", on_change=reset_selection)
+query = st.text_input("", placeholder="e.g. Dune, Panchayat season 2, Batman...", on_change=reset_selection)
 
 if query:
     if st.session_state.selected_media:
-        render_glass_card(
-            st.session_state.selected_media["id"],
-            st.session_state.selected_media["type"],
-            st.session_state.selected_media["season"]
-        )
+        render_glass_card(st.session_state.selected_media["id"], st.session_state.selected_media["type"], st.session_state.selected_media["season"])
     else:
         with st.spinner("Analyzing intent..."):
             try:
                 intent = analyze_intent(query)
-                title = intent.get("title", query)
-                media_type = intent.get("type", "multi")
-                season = intent.get("season")
-                is_exact = intent.get("is_exact", False)
-                
-                results = search_tmdb(title, media_type)
+                results = search_tmdb(intent.get("title", query), intent.get("type", "multi"))
             except Exception as e:
-                st.error("Error processing request. Please try again.")
+                st.error("Error processing request.")
                 st.stop()
                 
         if not results:
             st.warning(f"No results found for '{query}'.")
         else:
-            if is_exact:
-                first_result = results[0]
-                detected_type = first_result.get("media_type", media_type if media_type in ["movie", "tv"] else "movie")
-                render_glass_card(first_result["id"], detected_type, season)
+            if intent.get("is_exact", False):
+                first = results[0]
+                render_glass_card(first["id"], first.get("media_type", "movie"), intent.get("season"))
             else:
-                # FIX: Replaced double quotes with single quotes to prevent SyntaxError
-                st.markdown('<h3 class="text-xl text-white font-bold mb-4">Top Matches:</h3>', unsafe_allow_html=True)
-                
+                st.markdown('<h3 style="color: white; margin-top: 1rem;">Top Matches:</h3>', unsafe_allow_html=True)
                 cols = st.columns(5)
                 for idx, res in enumerate(results):
-                    res_type = res.get("media_type", media_type if media_type in ["movie", "tv"] else "movie")
-                    if res_type not in ["movie", "tv"]:
-                        continue
-                        
+                    if res.get("media_type", "movie") not in ["movie", "tv"]: continue
                     res_poster = res.get("poster_path")
                     poster_url = f"https://image.tmdb.org/t/p/w342{res_poster}" if res_poster else "https://via.placeholder.com/342x513?text=No+Image"
                     
                     with cols[idx]:
                         st.image(poster_url, use_container_width=True)
-                        if st.button(f"View Details", key=f"btn_{res['id']}"):
-                            st.session_state.selected_media = {
-                                "id": res["id"],
-                                "type": res_type,
-                                "season": None
-                            }
+                        if st.button(f"Select", key=f"btn_{res['id']}", use_container_width=True):
+                            st.session_state.selected_media = {"id": res["id"], "type": res.get("media_type", "movie"), "season": None}
                             st.rerun()
