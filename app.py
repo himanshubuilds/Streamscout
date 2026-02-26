@@ -180,4 +180,122 @@ def render_glass_card(media_id, media_type, season=None):
         duration = format_time(details.get("runtime"))
         status_badge = "Movie"
     else:
-        seasons_count = details.get("number_of_seasons",
+        seasons_count = details.get("number_of_seasons", 1)
+        duration = f"{seasons_count} Season{'s' if seasons_count > 1 else ''}"
+        status_badge = "TV Show"
+        
+    genres = ", ".join([g["name"] for g in details.get("genres", [])[:2]])
+    overview = details.get("overview", "No overview available.").replace("{", "(").replace("}", ")")
+    
+    provider_list = providers.get("flatrate") or []
+    if not provider_list:
+        provider_list = (providers.get("rent") or []) + (providers.get("buy") or [])
+        
+    seen = set()
+    unique_providers = []
+    for p in provider_list:
+        if p["provider_id"] not in seen:
+            seen.add(p["provider_id"])
+            unique_providers.append(p)
+            
+    if not unique_providers:
+        providers_html = '<div class="not-available">Not currently available to stream legally in India.</div>'
+    else:
+        providers_html = ""
+        for p in unique_providers:
+            logo_url = f"https://image.tmdb.org/t/p/original{p['logo_path']}"
+            providers_html += f'<div class="provider-pill"><img src="{logo_url}" class="provider-img" alt="{p["provider_name"]}"><span>{p["provider_name"]}</span></div>'
+            
+    final_html = f"""
+<div class="glass-card">
+    <div class="glass-poster-container">
+        <img src="{poster_url}" class="glass-poster">
+        <span class="status-badge">{status_badge}</span>
+    </div>
+    <div class="card-details">
+        <h2 class="card-title">{title}</h2>
+        <div class="meta-row">
+            <span class="highlight">⭐ {rating} TMDb</span>
+            <div class="dot"></div><span>{year}</span>
+            <div class="dot"></div><span>{duration}</span>
+            <div class="dot"></div><span>{genres}</span>
+        </div>
+        <p class="card-overview">{overview}</p>
+        <div class="divider"></div>
+        <p style="color: #94a3b8; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0;">Available in India (IN)</p>
+        <div class="provider-row">
+            {providers_html}
+        </div>
+    </div>
+</div>
+"""
+    st.markdown(final_html, unsafe_allow_html=True)
+
+# --------------------------------------------------------------------------------
+# 6. MAIN APP FLOW
+# --------------------------------------------------------------------------------
+# Top Bar: Logo & Home Button
+col_logo, col_home = st.columns([5, 1])
+with col_logo:
+    st.markdown('<p class="logo-text">🎬 StreamScout</p>', unsafe_allow_html=True)
+with col_home:
+    if st.button("🏠 Home", use_container_width=True):
+        go_home()
+        st.rerun()
+
+st.markdown("""
+    <div class="main-title">Find your next <span class="highlight">obsession</span></div>
+    <div class="sub-title">Search millions of movies and TV shows in India.</div>
+""", unsafe_allow_html=True)
+
+query = st.text_input("", placeholder="e.g. Dune, Panchayat season 2, Batman...", key="search_query", on_change=handle_search)
+
+if st.session_state.search_query:
+    if st.session_state.selected_media:
+        col_back, _ = st.columns([1, 5])
+        with col_back:
+            if st.button("← Back to Results", use_container_width=True):
+                go_back()
+                st.rerun()
+        render_glass_card(st.session_state.selected_media["id"], st.session_state.selected_media["type"], st.session_state.selected_media["season"])
+    else:
+        with st.spinner("Searching records..."):
+            intent = analyze_intent(st.session_state.search_query)
+            results = search_tmdb(intent.get("title", st.session_state.search_query), intent.get("type", "multi"))
+            
+            if not results:
+                st.warning(f"No results found for '{st.session_state.search_query}'.")
+            else:
+                if intent.get("is_exact", False) and len(results) > 0:
+                    first = results[0]
+                    render_glass_card(first["id"], first.get("media_type", "movie"), intent.get("season"))
+                else:
+                    st.markdown('<h3 style="color: white; margin-top: 1rem;">Top Matches:</h3>', unsafe_allow_html=True)
+                    
+                    # Pagination Logic
+                    display_count = 10 if st.session_state.show_all else 5
+                    visible_results = results[:display_count]
+                    
+                    # Create rows of 5
+                    for i in range(0, len(visible_results), 5):
+                        cols = st.columns(5)
+                        for j in range(5):
+                            if i + j < len(visible_results):
+                                res = visible_results[i+j]
+                                if res.get("media_type", "movie") not in ["movie", "tv"]: continue
+                                
+                                res_poster = res.get("poster_path")
+                                poster_url = f"https://image.tmdb.org/t/p/w342{res_poster}" if res_poster else "https://via.placeholder.com/342x513?text=No+Image"
+                                
+                                with cols[j]:
+                                    st.image(poster_url, use_container_width=True)
+                                    if st.button(f"Select", key=f"btn_{res['id']}", use_container_width=True):
+                                        st.session_state.selected_media = {"id": res["id"], "type": res.get("media_type", "movie"), "season": None}
+                                        st.rerun()
+
+                    # Show More Button
+                    if len(results) > 5 and not st.session_state.show_all:
+                        st.markdown("<br>", unsafe_allow_html=True) # add a little breathing room
+                        if st.button("Show More ▼", use_container_width=True):
+                            st.session_state.show_all = True
+                            st.rerun()
