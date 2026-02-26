@@ -7,10 +7,9 @@ import urllib.parse
 # --------------------------------------------------------------------------------
 # 1. SETUP & CONFIGURATION
 # --------------------------------------------------------------------------------
-st.set_page_config(page_title="StreamScout India", page_icon="🦉", layout="centered")
+st.set_page_config(page_title="StreamScout India", page_icon="🎬", layout="centered")
 
 # Hide Streamlit's default header/footer and make background transparent
-# so our injected Tailwind HTML background works perfectly.
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -42,7 +41,6 @@ genai.configure(api_key=GEMINI_API_KEY)
 # --------------------------------------------------------------------------------
 # 2. HTML & TAILWIND TEMPLATES (From your design)
 # --------------------------------------------------------------------------------
-# We extract the head, background, and header to inject globally
 GLOBAL_HTML = """
 <!DOCTYPE html><html class="dark" lang="en"><head>
     <link href="https://fonts.googleapis.com" rel="preconnect">
@@ -76,14 +74,12 @@ GLOBAL_HTML = """
     </style>
 </head>
 <body class="bg-background-dark font-display text-slate-100 antialiased overflow-x-hidden relative selection:bg-teal-400 selection:text-background-dark">
-    <!-- Ambient Background -->
     <div class="fixed inset-0 overflow-hidden pointer-events-none z-[-1]">
         <div class="absolute -top-[10%] -left-[10%] w-[50%] h-[50%] rounded-full bg-primary/20 blur-[120px] mix-blend-screen opacity-60"></div>
         <div class="absolute top-[20%] right-[10%] w-[40%] h-[60%] rounded-full bg-teal-500/10 blur-[100px] mix-blend-screen opacity-50"></div>
         <div class="absolute -bottom-[20%] left-[20%] w-[60%] h-[50%] rounded-full bg-primary/10 blur-[130px] mix-blend-screen opacity-40"></div>
     </div>
     
-    <!-- Header -->
     <header class="flex items-center justify-between whitespace-nowrap px-8 py-6 w-full max-w-7xl mx-auto">
         <div class="flex items-center gap-3 group cursor-pointer">
             <div class="size-10 bg-gradient-to-br from-primary to-teal-400 rounded-lg flex items-center justify-center shadow-lg shadow-primary/20">
@@ -95,13 +91,10 @@ GLOBAL_HTML = """
 </body></html>
 """
 
-# The Dynamic Glass Card Template
 GLASS_CARD_TEMPLATE = """
 <div class="w-full backdrop-blur-2xl bg-surface-glass border border-surface-glass-border rounded-[2.5rem] shadow-2xl p-6 md:p-8 flex flex-col gap-8 mt-4 overflow-hidden relative">
     <div class="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
     <div class="flex flex-col lg:flex-row gap-8 items-start relative z-10">
-        
-        <!-- Poster -->
         <div class="w-full lg:w-1/3 shrink-0">
             <div class="aspect-[2/3] w-full rounded-2xl overflow-hidden shadow-2xl shadow-black/50 relative group">
                 <div class="w-full h-full bg-cover bg-center transition-transform duration-700 group-hover:scale-105" style="background-image: url('{poster_url}');"></div>
@@ -110,8 +103,6 @@ GLASS_CARD_TEMPLATE = """
                 </div>
             </div>
         </div>
-        
-        <!-- Details -->
         <div class="flex flex-col flex-1 py-2 gap-6">
             <div class="space-y-1">
                 <h2 class="text-4xl md:text-5xl font-black text-white leading-[1.1] tracking-tight">{title}</h2>
@@ -128,12 +119,8 @@ GLASS_CARD_TEMPLATE = """
                     <span>{genres}</span>
                 </div>
             </div>
-            
             <p class="text-slate-300 text-lg leading-relaxed max-w-2xl font-light">{overview}</p>
-            
             <div class="w-full h-px bg-gradient-to-r from-transparent via-surface-glass-border to-transparent my-2"></div>
-            
-            <!-- Streaming Providers -->
             <div class="flex flex-col gap-3">
                 <p class="text-sm text-slate-400 font-medium uppercase tracking-widest">Available in India (IN)</p>
                 <div class="flex gap-3 overflow-x-auto no-scrollbar py-2 mask-linear-fade">
@@ -191,30 +178,34 @@ def analyze_intent(query):
     """
     model = genai.GenerativeModel('gemini-1.5-flash')
     response = model.generate_content(prompt, generation_config={"response_mime_type": "application/json"})
-    return json.loads(response.text)
+    
+    # Clean the AI output just in case it added markdown ticks
+    raw_text = response.text.strip()
+    if raw_text.startswith("```json"):
+        raw_text = raw_text[7:-3].strip()
+    elif raw_text.startswith("```"):
+        raw_text = raw_text[3:-3].strip()
+        
+    return json.loads(raw_text)
 
 def search_tmdb(title, media_type):
-    """Searches TMDB for fuzzy matches."""
     endpoint = "multi" if media_type not in ["movie", "tv"] else media_type
     url = f"https://api.themoviedb.org/3/search/{endpoint}?api_key={TMDB_API_KEY}&query={urllib.parse.quote(title)}&language=en-US&page=1"
     res = requests.get(url).json()
     return res.get("results", [])[:5]
 
 def get_tmdb_details(media_id, media_type):
-    """Fetches exact movie/tv details."""
     url = f"https://api.themoviedb.org/3/{media_type}/{media_id}?api_key={TMDB_API_KEY}&language=en-US"
     return requests.get(url).json()
 
 def get_tmdb_providers(media_id, media_type, season=None):
-    """Fetches watch providers for India (IN)."""
     if season:
         url = f"https://api.themoviedb.org/3/tv/{media_id}/season/{season}/watch/providers?api_key={TMDB_API_KEY}"
     else:
         url = f"https://api.themoviedb.org/3/{media_type}/{media_id}/watch/providers?api_key={TMDB_API_KEY}"
-    
     res = requests.get(url).json()
     results = res.get("results", {})
-    return results.get("IN", {})
+    return results.get("IN", {}) if isinstance(results, dict) else {}
 
 # --------------------------------------------------------------------------------
 # 5. UI RENDER FUNCTIONS
@@ -226,20 +217,16 @@ def format_time(minutes):
     return f"{h}h {m}m" if h > 0 else f"{m}m"
 
 def render_glass_card(media_id, media_type, season=None):
-    """Builds and renders the dynamic Glass Card for Output 1, 3, 4 & 6."""
     details = get_tmdb_details(media_id, media_type)
     providers = get_tmdb_providers(media_id, media_type, season)
     
-    # Extract Details
     title = details.get("title") or details.get("name")
     if season:
         title += f" (Season {season})"
         
     poster_path = details.get("poster_path")
     poster_url = f"https://image.tmdb.org/t/p/w780{poster_path}" if poster_path else "https://via.placeholder.com/500x750?text=No+Poster"
-    
     rating = round(details.get("vote_average", 0), 1)
-    
     release_date = details.get("release_date") or details.get("first_air_date")
     year = release_date[:4] if release_date else "N/A"
     
@@ -252,14 +239,18 @@ def render_glass_card(media_id, media_type, season=None):
         status_badge = "TV Show"
         
     genres = ", ".join([g["name"] for g in details.get("genres", [])[:2]])
-    overview = details.get("overview", "No overview available.")
     
-    # Extract Providers (Prioritize Flatrate/Streaming, fallback to Rent/Buy)
-    provider_list = providers.get("flatrate", [])
+    # Strip rogue braces from overview to prevent formatting crashes
+    raw_overview = details.get("overview", "No overview available.")
+    overview = raw_overview.replace("{", "(").replace("}", ")")
+    
+    # Fallback safety for API list logic
+    provider_list = providers.get("flatrate") or []
     if not provider_list:
-        provider_list = providers.get("rent", []) + providers.get("buy", [])
+        rent_list = providers.get("rent") or []
+        buy_list = providers.get("buy") or []
+        provider_list = rent_list + buy_list
         
-    # Deduplicate providers
     seen = set()
     unique_providers = []
     for p in provider_list:
@@ -267,7 +258,6 @@ def render_glass_card(media_id, media_type, season=None):
             seen.add(p["provider_id"])
             unique_providers.append(p)
             
-    # Build Provider HTML (Output 6 if empty)
     if not unique_providers:
         providers_html = NOT_AVAILABLE_TEMPLATE
     else:
@@ -279,7 +269,6 @@ def render_glass_card(media_id, media_type, season=None):
                 name=p["provider_name"]
             )
             
-    # Render Output Card
     final_html = GLASS_CARD_TEMPLATE.format(
         poster_url=poster_url,
         status_badge=status_badge,
@@ -291,13 +280,11 @@ def render_glass_card(media_id, media_type, season=None):
         overview=overview,
         providers_html=providers_html
     )
-    
     st.markdown(final_html, unsafe_allow_html=True)
 
 # --------------------------------------------------------------------------------
 # 6. MAIN APP FLOW
 # --------------------------------------------------------------------------------
-# Title Layout
 st.markdown("""
 <div class="w-full max-w-3xl mx-auto flex flex-col gap-4 items-center z-20 mt-10 mb-6 text-center">
     <h1 class="text-4xl md:text-5xl font-bold text-white tracking-tight">
@@ -307,12 +294,10 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# Input
 query = st.text_input("Enter a movie or show...", placeholder="e.g. Dune, Panchayat season 2, Batman...", on_change=reset_selection)
 
 if query:
     if st.session_state.selected_media:
-        # User selected a specific movie from the fuzzy list
         render_glass_card(
             st.session_state.selected_media["id"],
             st.session_state.selected_media["type"],
@@ -327,9 +312,7 @@ if query:
                 season = intent.get("season")
                 is_exact = intent.get("is_exact", False)
                 
-                # Search TMDB
                 results = search_tmdb(title, media_type)
-                
             except Exception as e:
                 st.error("Error processing request. Please try again.")
                 st.stop()
@@ -338,24 +321,19 @@ if query:
             st.warning(f"No results found for '{query}'.")
         else:
             if is_exact:
-                # Output 1, 3 & 4 (Exact Match / Specific Season)
                 first_result = results[0]
                 detected_type = first_result.get("media_type", media_type if media_type in ["movie", "tv"] else "movie")
                 render_glass_card(first_result["id"], detected_type, season)
-                
             else:
-                # Output 2 & 5 (Fuzzy Match -> Show Top 5)
-                st.markdown("<h3 class="text-xl text-white font-bold mb-4">Top Matches:</h3>", unsafe_allow_html=True)
+                # FIX: Replaced double quotes with single quotes to prevent SyntaxError
+                st.markdown('<h3 class="text-xl text-white font-bold mb-4">Top Matches:</h3>', unsafe_allow_html=True)
                 
-                # Streamlit columns to layout 5 small posters
                 cols = st.columns(5)
                 for idx, res in enumerate(results):
                     res_type = res.get("media_type", media_type if media_type in ["movie", "tv"] else "movie")
-                    # Skip people
                     if res_type not in ["movie", "tv"]:
                         continue
                         
-                    res_title = res.get("title") or res.get("name")
                     res_poster = res.get("poster_path")
                     poster_url = f"https://image.tmdb.org/t/p/w342{res_poster}" if res_poster else "https://via.placeholder.com/342x513?text=No+Image"
                     
@@ -368,5 +346,3 @@ if query:
                                 "season": None
                             }
                             st.rerun()
-
-# Note: Streamlit execution ends here. The UI updates dynamically based on session_state.
