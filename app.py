@@ -16,7 +16,7 @@ GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
 genai.configure(api_key=GEMINI_API_KEY)
 
 # --------------------------------------------------------------------------------
-# 2. RAW CSS (Targeting Modern Streamlit Tags)
+# 2. RAW CSS (Aggressive overrides for Light/Dark Mode conflicts)
 # --------------------------------------------------------------------------------
 st.markdown("""
 <style>
@@ -35,22 +35,32 @@ st.markdown("""
         font-family: 'Inter', sans-serif;
     }
     
-    /* Center the main block */
-    [data-testid="stAppViewBlockContainer"] {
-        padding-top: 2rem;
-    }
-
-    /* Target the Search Bar Input */
-    [data-testid="stTextInput"] > div > div > div {
-        background-color: rgba(42, 28, 61, 0.6) !important;
-        border: 1px solid rgba(255, 255, 255, 0.2) !important;
-        border-radius: 1.5rem !important;
-        backdrop-filter: blur(10px);
-        padding: 0.2rem 0.5rem;
+    /* Fix 1: The Search Bar */
+    [data-testid="stTextInput"] div[data-baseweb="input"] {
+        background-color: rgba(25, 16, 34, 0.9) !important;
+        border: 1px solid rgba(255, 255, 255, 0.3) !important;
+        border-radius: 1rem !important;
     }
     [data-testid="stTextInput"] input {
-        color: white !important;
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
         font-size: 1.1rem !important;
+    }
+    
+    /* Fix 2: The Select Buttons */
+    div[data-testid="stButton"] > button {
+        background-color: rgba(127, 19, 236, 0.6) !important;
+        color: #ffffff !important;
+        border: 1px solid rgba(255, 255, 255, 0.3) !important;
+        border-radius: 0.5rem !important;
+    }
+    div[data-testid="stButton"] > button p {
+        color: #ffffff !important;
+        font-weight: bold !important;
+    }
+    div[data-testid="stButton"] > button:hover {
+        background-color: rgba(20, 184, 166, 0.8) !important;
+        border-color: rgba(255, 255, 255, 0.8) !important;
     }
 
     /* Glass Card Container */
@@ -118,17 +128,14 @@ def analyze_intent(query):
         elif raw_text.startswith("```"): raw_text = raw_text[3:-3].strip()
         return json.loads(raw_text)
     except Exception as e:
-        # FAILSAFE: If Gemini breaks, bypass it and return a standard search.
         return {"title": query, "type": "multi", "season": None, "is_exact": False, "ai_error": str(e)}
 
 def search_tmdb(title, media_type):
     endpoint = "multi" if media_type not in ["movie", "tv"] else media_type
     url = f"https://api.themoviedb.org/3/search/{endpoint}?api_key={TMDB_API_KEY}&query={urllib.parse.quote(title)}&language=en-US&page=1"
     res = requests.get(url)
-    
     if res.status_code != 200:
         raise Exception(f"TMDB API Failed: Code {res.status_code}. Details: {res.text}")
-        
     return res.json().get("results", [])[:5]
 
 def get_tmdb_details(media_id, media_type):
@@ -186,42 +193,38 @@ def render_glass_card(media_id, media_type, season=None):
             seen.add(p["provider_id"])
             unique_providers.append(p)
             
+    # Fix 3: Flattened HTML to prevent Markdown Code Block Parsing
     if not unique_providers:
         providers_html = '<div class="not-available">Not currently available to stream legally in India.</div>'
     else:
         providers_html = ""
         for p in unique_providers:
             logo_url = f"https://image.tmdb.org/t/p/original{p['logo_path']}"
-            providers_html += f"""
-            <div class="provider-pill">
-                <img src="{logo_url}" class="provider-img" alt="{p['provider_name']}">
-                <span>{p['provider_name']}</span>
-            </div>
-            """
+            providers_html += f'<div class="provider-pill"><img src="{logo_url}" class="provider-img" alt="{p["provider_name"]}"><span>{p["provider_name"]}</span></div>'
             
     final_html = f"""
-    <div class="glass-card">
-        <div class="glass-poster-container">
-            <img src="{poster_url}" class="glass-poster">
-            <span class="status-badge">{status_badge}</span>
+<div class="glass-card">
+    <div class="glass-poster-container">
+        <img src="{poster_url}" class="glass-poster">
+        <span class="status-badge">{status_badge}</span>
+    </div>
+    <div class="card-details">
+        <h2 class="card-title">{title}</h2>
+        <div class="meta-row">
+            <span class="highlight">⭐ {rating} TMDb</span>
+            <div class="dot"></div><span>{year}</span>
+            <div class="dot"></div><span>{duration}</span>
+            <div class="dot"></div><span>{genres}</span>
         </div>
-        <div class="card-details">
-            <h2 class="card-title">{title}</h2>
-            <div class="meta-row">
-                <span class="highlight">⭐ {rating} TMDb</span>
-                <div class="dot"></div><span>{year}</span>
-                <div class="dot"></div><span>{duration}</span>
-                <div class="dot"></div><span>{genres}</span>
-            </div>
-            <p class="card-overview">{overview}</p>
-            <div class="divider"></div>
-            <p style="color: #94a3b8; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0;">Available in India (IN)</p>
-            <div class="provider-row">
-                {providers_html}
-            </div>
+        <p class="card-overview">{overview}</p>
+        <div class="divider"></div>
+        <p style="color: #94a3b8; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0;">Available in India (IN)</p>
+        <div class="provider-row">
+            {providers_html}
         </div>
     </div>
-    """
+</div>
+"""
     st.markdown(final_html, unsafe_allow_html=True)
 
 # --------------------------------------------------------------------------------
@@ -242,7 +245,6 @@ if query:
             try:
                 intent = analyze_intent(query)
                 
-                # Check if AI failed and triggered the fallback
                 if "ai_error" in intent:
                     st.warning("AI Router is temporarily offline. Falling back to basic search mode.")
                     
@@ -269,7 +271,6 @@ if query:
                                     st.rerun()
 
             except Exception as e:
-                # If we get here, TMDB failed or something broke critically.
                 st.error("System Error")
                 st.code(str(e))
                 st.stop()
