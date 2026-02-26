@@ -5,9 +5,9 @@ import json
 import urllib.parse
 
 # --------------------------------------------------------------------------------
-# 1. SETUP & CONFIGURATION
+# 1. SETUP & CONFIGURATION (Changed to 'wide' layout)
 # --------------------------------------------------------------------------------
-st.set_page_config(page_title="StreamScout India", page_icon="🎬", layout="centered")
+st.set_page_config(page_title="StreamScout India", page_icon="🎬", layout="wide")
 
 # Secure API Keys
 TMDB_API_KEY = st.secrets["TMDB_API_KEY"]
@@ -16,7 +16,7 @@ GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
 genai.configure(api_key=GEMINI_API_KEY)
 
 # --------------------------------------------------------------------------------
-# 2. RAW CSS (Aggressive overrides for Light/Dark Mode conflicts)
+# 2. RAW CSS (Aggressive overrides for Width and Search Bar)
 # --------------------------------------------------------------------------------
 st.markdown("""
 <style>
@@ -35,32 +35,42 @@ st.markdown("""
         font-family: 'Inter', sans-serif;
     }
     
-    /* Fix 1: The Search Bar */
-    [data-testid="stTextInput"] div[data-baseweb="input"] {
-        background-color: rgba(25, 16, 34, 0.9) !important;
+    /* Fix 2: Make the app take up 2/3 of the screen perfectly */
+    [data-testid="stAppViewBlockContainer"] {
+        max-width: 1200px !important; 
+        padding-top: 2rem;
+        margin: 0 auto;
+    }
+
+    /* Fix 1: Force Search Bar to be Dark Purple with White Text */
+    .stTextInput div[data-baseweb="base-input"] {
+        background-color: #2a1c3d !important;
         border: 1px solid rgba(255, 255, 255, 0.3) !important;
         border-radius: 1rem !important;
     }
-    [data-testid="stTextInput"] input {
+    .stTextInput input {
         color: #ffffff !important;
         -webkit-text-fill-color: #ffffff !important;
         font-size: 1.1rem !important;
+        background-color: transparent !important;
+        padding: 0.75rem 1rem !important;
     }
     
-    /* Fix 2: The Select Buttons */
+    /* The Select Buttons */
     div[data-testid="stButton"] > button {
-        background-color: rgba(127, 19, 236, 0.6) !important;
+        background-color: rgba(127, 19, 236, 0.8) !important;
         color: #ffffff !important;
         border: 1px solid rgba(255, 255, 255, 0.3) !important;
         border-radius: 0.5rem !important;
+        width: 100%;
     }
     div[data-testid="stButton"] > button p {
         color: #ffffff !important;
         font-weight: bold !important;
     }
     div[data-testid="stButton"] > button:hover {
-        background-color: rgba(20, 184, 166, 0.8) !important;
-        border-color: rgba(255, 255, 255, 0.8) !important;
+        background-color: rgba(20, 184, 166, 0.9) !important;
+        border-color: rgba(255, 255, 255, 0.9) !important;
     }
 
     /* Glass Card Container */
@@ -70,35 +80,35 @@ st.markdown("""
         border: 1px solid rgba(255, 255, 255, 0.1); 
         border-radius: 2rem;
         box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-        padding: 2rem; display: flex; gap: 2rem; margin-top: 1rem; position: relative; overflow: hidden;
+        padding: 2.5rem; display: flex; gap: 3rem; margin-top: 1rem; position: relative; overflow: hidden;
     }
-    @media (max-width: 768px) { .glass-card { flex-direction: column; } }
+    @media (max-width: 768px) { .glass-card { flex-direction: column; gap: 1.5rem; padding: 1.5rem;} }
     
     /* Poster */
-    .glass-poster-container { flex-shrink: 0; width: 33%; border-radius: 1rem; overflow: hidden; position: relative; }
-    @media (max-width: 768px) { .glass-poster-container { width: 100%; } }
+    .glass-poster-container { flex-shrink: 0; width: 300px; border-radius: 1rem; overflow: hidden; position: relative; }
+    @media (max-width: 768px) { .glass-poster-container { width: 100%; max-width: 300px; margin: 0 auto;} }
     .glass-poster { width: 100%; height: auto; display: block; border-radius: 1rem; }
-    .status-badge { position: absolute; top: 1rem; left: 1rem; padding: 0.25rem 0.75rem; background: rgba(0,0,0,0.6); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); border-radius: 0.5rem; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; color: white; }
+    .status-badge { position: absolute; top: 1rem; left: 1rem; padding: 0.25rem 0.75rem; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); border-radius: 0.5rem; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; color: white; }
     
     /* Text Details */
-    .card-details { flex: 1; display: flex; flex-direction: column; gap: 1rem; }
-    .card-title { font-size: 2.5rem; font-weight: 900; line-height: 1.1; margin: 0; color: white; }
-    .meta-row { display: flex; flex-wrap: wrap; gap: 1rem; font-size: 0.9rem; color: #cbd5e1; align-items: center; font-weight: 500;}
-    .dot { width: 4px; height: 4px; border-radius: 50%; background-color: #64748b; }
-    .card-overview { font-size: 1.1rem; line-height: 1.6; color: #cbd5e1; font-weight: 300; margin: 0; }
-    .divider { width: 100%; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent); margin: 1rem 0; }
+    .card-details { flex: 1; display: flex; flex-direction: column; gap: 1rem; justify-content: center;}
+    .card-title { font-size: 3rem; font-weight: 900; line-height: 1.1; margin: 0; color: white; }
+    .meta-row { display: flex; flex-wrap: wrap; gap: 1rem; font-size: 1rem; color: #cbd5e1; align-items: center; font-weight: 500;}
+    .dot { width: 5px; height: 5px; border-radius: 50%; background-color: #64748b; }
+    .card-overview { font-size: 1.15rem; line-height: 1.6; color: #cbd5e1; font-weight: 300; margin: 0; }
+    .divider { width: 100%; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent); margin: 1rem 0; }
     
     /* Provider Pills */
-    .provider-row { display: flex; gap: 0.75rem; overflow-x: auto; padding-bottom: 0.5rem; }
+    .provider-row { display: flex; gap: 1rem; overflow-x: auto; padding-bottom: 0.5rem; }
     .provider-row::-webkit-scrollbar { display: none; }
-    .provider-pill { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 1.25rem 0.5rem 0.5rem; border-radius: 9999px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); color: #e2e8f0; font-size: 0.875rem; font-weight: 600; white-space: nowrap; }
-    .provider-img { width: 2rem; height: 2rem; border-radius: 50%; object-fit: cover; }
+    .provider-pill { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 1.25rem 0.5rem 0.5rem; border-radius: 9999px; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.15); color: #e2e8f0; font-size: 0.95rem; font-weight: 600; white-space: nowrap; }
+    .provider-img { width: 2.5rem; height: 2.5rem; border-radius: 50%; object-fit: cover; }
     
     /* Headers */
-    .main-title { font-size: 3rem; font-weight: 800; text-align: center; margin-top: 1rem; margin-bottom: 0.5rem; color: white;}
-    .sub-title { font-size: 1.125rem; color: #94a3b8; text-align: center; margin-bottom: 2rem; }
+    .main-title { font-size: 3.5rem; font-weight: 800; text-align: center; margin-top: 1rem; margin-bottom: 0.5rem; color: white;}
+    .sub-title { font-size: 1.25rem; color: #94a3b8; text-align: center; margin-bottom: 2.5rem; }
     .highlight { color: #2dd4bf; }
-    .not-available { color: #f87171; font-weight: 500; background: rgba(248, 113, 113, 0.1); padding: 0.5rem 1rem; border-radius: 0.5rem; border: 1px solid rgba(248, 113, 113, 0.2); display: inline-block;}
+    .not-available { color: #f87171; font-weight: 500; background: rgba(248, 113, 113, 0.1); padding: 0.75rem 1.25rem; border-radius: 0.5rem; border: 1px solid rgba(248, 113, 113, 0.2); display: inline-block;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -112,23 +122,25 @@ def reset_selection():
     st.session_state.selected_media = None
 
 # --------------------------------------------------------------------------------
-# 4. CORE LOGIC WITH FAILSAFES
+# 4. CORE LOGIC (SILENT FAILSAFES)
 # --------------------------------------------------------------------------------
 def analyze_intent(query):
     try:
+        # Removed strict generation_config to prevent older Streamlit SDK crashes
         prompt = f"""
-        Analyze the search query for an OTT search engine. Return strictly JSON.
+        Analyze the search query for an OTT search engine. Return strictly a JSON object and nothing else.
         Schema: {{"title": "Cleaned title", "type": "movie" | "tv" | "multi", "season": <int or null>, "is_exact": <bool>}}
         Query: "{query}"
         """
         model = genai.GenerativeModel('gemini-1.5-flash')
-        response = model.generate_content(prompt, generation_config={"response_mime_type": "application/json"})
+        response = model.generate_content(prompt)
         raw_text = response.text.strip()
         if raw_text.startswith("```json"): raw_text = raw_text[7:-3].strip()
         elif raw_text.startswith("```"): raw_text = raw_text[3:-3].strip()
         return json.loads(raw_text)
-    except Exception as e:
-        return {"title": query, "type": "multi", "season": None, "is_exact": False, "ai_error": str(e)}
+    except Exception:
+        # SILENT FALLBACK: No yellow errors. Just pass the raw query to TMDB.
+        return {"title": query, "type": "multi", "season": None, "is_exact": False}
 
 def search_tmdb(title, media_type):
     endpoint = "multi" if media_type not in ["movie", "tv"] else media_type
@@ -193,7 +205,6 @@ def render_glass_card(media_id, media_type, season=None):
             seen.add(p["provider_id"])
             unique_providers.append(p)
             
-    # Fix 3: Flattened HTML to prevent Markdown Code Block Parsing
     if not unique_providers:
         providers_html = '<div class="not-available">Not currently available to stream legally in India.</div>'
     else:
@@ -244,10 +255,6 @@ if query:
         with st.spinner("Searching records..."):
             try:
                 intent = analyze_intent(query)
-                
-                if "ai_error" in intent:
-                    st.warning("AI Router is temporarily offline. Falling back to basic search mode.")
-                    
                 results = search_tmdb(intent.get("title", query), intent.get("type", "multi"))
                 
                 if not results:
