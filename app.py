@@ -14,7 +14,26 @@ GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
 genai.configure(api_key=GEMINI_API_KEY)
 
 # --------------------------------------------------------------------------------
-# 2. RAW CSS
+# 2. THE ROUTING INTERCEPTOR (Direct OTT Links)
+# --------------------------------------------------------------------------------
+OTT_HOME_LINKS = {
+    "Netflix": "https://www.netflix.com/in/",
+    "Amazon Prime Video": "https://www.primevideo.com/",
+    "Amazon Video": "https://www.primevideo.com/",
+    "Hotstar": "https://www.hotstar.com/in",
+    "Disney Plus Hotstar": "https://www.hotstar.com/in",
+    "JioCinema": "https://www.jiocinema.com/",
+    "Sony Liv": "https://www.sonyliv.com/",
+    "Zee5": "https://www.zee5.com/",
+    "Apple TV Plus": "https://tv.apple.com/in",
+    "Apple TV": "https://tv.apple.com/in",
+    "YouTube": "https://www.youtube.com/",
+    "Google Play Movies": "https://play.google.com/store/movies",
+    "Crunchyroll": "https://www.crunchyroll.com/"
+}
+
+# --------------------------------------------------------------------------------
+# 3. RAW CSS (3D Depth, Layout, Custom Branding)
 # --------------------------------------------------------------------------------
 st.markdown("""
 <style>
@@ -66,7 +85,7 @@ st.markdown("""
         border-color: rgba(255, 255, 255, 0.9) !important;
     }
 
-    /* LOGO BUTTON OVERRIDES (Makes the button look like a text logo) */
+    /* LOGO BUTTON OVERRIDES */
     .st-key-logo_btn button {
         background: transparent !important;
         border: none !important;
@@ -161,7 +180,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --------------------------------------------------------------------------------
-# 3. STATE MANAGEMENT
+# 4. STATE MANAGEMENT
 # --------------------------------------------------------------------------------
 if "selected_media" not in st.session_state: st.session_state.selected_media = None
 if "show_all" not in st.session_state: st.session_state.show_all = False
@@ -180,7 +199,7 @@ def go_back():
     st.session_state.selected_media = None
 
 # --------------------------------------------------------------------------------
-# 4. CORE LOGIC
+# 5. CORE LOGIC
 # --------------------------------------------------------------------------------
 def analyze_intent(query):
     try:
@@ -217,7 +236,7 @@ def get_tmdb_providers(media_id, media_type, season=None):
     return results.get("IN", {}) if isinstance(results, dict) else {}
 
 # --------------------------------------------------------------------------------
-# 5. UI RENDER FUNCTIONS
+# 6. UI RENDER FUNCTIONS
 # --------------------------------------------------------------------------------
 def format_time(minutes):
     if not minutes: return "N/A"
@@ -266,8 +285,14 @@ def render_glass_card(media_id, media_type, season=None):
         providers_html = ""
         justwatch_link = providers.get("link", "#")
         for p in unique_providers:
+            provider_name = p["provider_name"]
             logo_url = f"https://image.tmdb.org/t/p/original{p['logo_path']}"
-            providers_html += f'<a href="{justwatch_link}" target="_blank"><div class="provider-pill"><img src="{logo_url}" class="provider-img" alt="{p["provider_name"]}"><span>{p["provider_name"]}</span></div></a>'
+            
+            # The Interceptor Logic
+            target_link = OTT_HOME_LINKS.get(provider_name, justwatch_link)
+            
+            # Flattened HTML for Streamlit Rendering
+            providers_html += f'<a href="{target_link}" target="_blank"><div class="provider-pill"><img src="{logo_url}" class="provider-img" alt="{provider_name}"><span>{provider_name}</span></div></a>'
             
     final_html = f"""
 <div class="glass-card">
@@ -295,7 +320,7 @@ def render_glass_card(media_id, media_type, season=None):
     st.markdown(final_html, unsafe_allow_html=True)
 
 # --------------------------------------------------------------------------------
-# 6. MAIN APP FLOW
+# 7. MAIN APP FLOW
 # --------------------------------------------------------------------------------
 # Logo acting as a Home Button
 st.button("🎬 StreamScout", key="logo_btn", on_click=go_home)
