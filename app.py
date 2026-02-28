@@ -59,8 +59,8 @@ st.markdown("""
 
     /* Search Bar Styling */
     .stTextInput div[data-baseweb="base-input"] {
-        background-color: rgba(0, 95, 115, 0.2) !important;
-        border: 1px solid rgba(148, 210, 189, 0.3) !important;
+        background-color: #001219 !important; /* Forces solid deep dark background */
+        border: 1px solid rgba(148, 210, 189, 0.4) !important;
         border-radius: 1rem !important;
     }
     .stTextInput input {
