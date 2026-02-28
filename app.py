@@ -56,9 +56,9 @@ st.markdown("""
         border: 1px solid rgba(255, 255, 255, 0.3) !important;
         border-radius: 0.5rem !important;
         width: 100%;
-        margin-top: 0.5rem;
+        margin-top: 0.1rem;
     }
-    div[data-testid="stButton"] > button p { color: #ffffff !important; font-weight: bold !important; }
+    div[data-testid="stButton"] > button p { color: #ffffff !important; font-weight: bold !important; font-size: 1.1rem !important; }
     div[data-testid="stButton"] > button:hover {
         background-color: rgba(20, 184, 166, 0.9) !important;
         border-color: rgba(255, 255, 255, 0.9) !important;
@@ -84,9 +84,11 @@ st.markdown("""
     .card-overview { font-size: 1.15rem; line-height: 1.6; color: #cbd5e1; font-weight: 300; margin: 0; }
     .divider { width: 100%; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent); margin: 1rem 0; }
     
-    .provider-row { display: flex; gap: 1rem; overflow-x: auto; padding-bottom: 0.5rem; }
+    .provider-row { display: flex; gap: 1rem; overflow-x: auto; padding-bottom: 0.5rem; align-items: center; }
     .provider-row::-webkit-scrollbar { display: none; }
-    .provider-pill { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 1.25rem 0.5rem 0.5rem; border-radius: 9999px; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.15); color: #e2e8f0; font-size: 0.95rem; font-weight: 600; white-space: nowrap; }
+    .provider-row a { text-decoration: none !important; }
+    .provider-pill { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 1.25rem 0.5rem 0.5rem; border-radius: 9999px; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.15); color: #e2e8f0; font-size: 0.95rem; font-weight: 600; white-space: nowrap; transition: all 0.2s; cursor: pointer; }
+    .provider-pill:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.4); transform: translateY(-2px); }
     .provider-img { width: 2.5rem; height: 2.5rem; border-radius: 50%; object-fit: cover; }
     
     .logo-text { font-size: 2rem; font-weight: 900; color: #2dd4bf; margin: 0; padding-top: 0.5rem;}
@@ -140,7 +142,6 @@ def search_tmdb(title, media_type):
     url = f"https://api.themoviedb.org/3/search/{endpoint}?api_key={TMDB_API_KEY}&query={urllib.parse.quote(title)}&language=en-US&page=1"
     res = requests.get(url)
     if res.status_code != 200: return []
-    # Fetching up to 10 results now for the "Show More" feature
     return res.json().get("results", [])[:10]
 
 def get_tmdb_details(media_id, media_type):
@@ -202,9 +203,18 @@ def render_glass_card(media_id, media_type, season=None):
         providers_html = '<div class="not-available">Not currently available to stream legally in India.</div>'
     else:
         providers_html = ""
+        justwatch_link = providers.get("link", "#")
         for p in unique_providers:
             logo_url = f"https://image.tmdb.org/t/p/original{p['logo_path']}"
-            providers_html += f'<div class="provider-pill"><img src="{logo_url}" class="provider-img" alt="{p["provider_name"]}"><span>{p["provider_name"]}</span></div>'
+            # Wrap the provider pill in a clickable anchor tag
+            providers_html += f"""
+            <a href="{justwatch_link}" target="_blank">
+                <div class="provider-pill">
+                    <img src="{logo_url}" class="provider-img" alt="{p["provider_name"]}">
+                    <span>{p["provider_name"]}</span>
+                </div>
+            </a>
+            """
             
     final_html = f"""
 <div class="glass-card">
@@ -234,7 +244,6 @@ def render_glass_card(media_id, media_type, season=None):
 # --------------------------------------------------------------------------------
 # 6. MAIN APP FLOW
 # --------------------------------------------------------------------------------
-# Top Bar: Logo & Home Button
 col_logo, col_home = st.columns([5, 1])
 with col_logo:
     st.markdown('<p class="logo-text">🎬 StreamScout</p>', unsafe_allow_html=True)
@@ -244,11 +253,16 @@ with col_home:
         st.rerun()
 
 st.markdown("""
-    <div class="main-title">Find your next <span class="highlight">obsession</span></div>
-    <div class="sub-title">Search millions of movies and TV shows in India.</div>
+    <div class="main-title">Where is it <span class="highlight">streaming?</span></div>
+    <div class="sub-title">Discover instantly where to watch any movie or series.</div>
 """, unsafe_allow_html=True)
 
-query = st.text_input("", placeholder="e.g. Dune, Panchayat season 2, Batman...", key="search_query", on_change=handle_search)
+# Added the side-by-side layout for Input + Search Button
+col_search, col_btn = st.columns([5, 1])
+with col_search:
+    st.text_input("Search Input", placeholder="e.g. Dune, Panchayat season 2, Batman...", key="search_query", label_visibility="collapsed", on_change=handle_search)
+with col_btn:
+    st.button("Search", use_container_width=True, on_click=handle_search)
 
 if st.session_state.search_query:
     if st.session_state.selected_media:
@@ -272,11 +286,9 @@ if st.session_state.search_query:
                 else:
                     st.markdown('<h3 style="color: white; margin-top: 1rem;">Top Matches:</h3>', unsafe_allow_html=True)
                     
-                    # Pagination Logic
                     display_count = 10 if st.session_state.show_all else 5
                     visible_results = results[:display_count]
                     
-                    # Create rows of 5
                     for i in range(0, len(visible_results), 5):
                         cols = st.columns(5)
                         for j in range(5):
@@ -293,9 +305,8 @@ if st.session_state.search_query:
                                         st.session_state.selected_media = {"id": res["id"], "type": res.get("media_type", "movie"), "season": None}
                                         st.rerun()
 
-                    # Show More Button
                     if len(results) > 5 and not st.session_state.show_all:
-                        st.markdown("<br>", unsafe_allow_html=True) # add a little breathing room
+                        st.markdown("<br>", unsafe_allow_html=True)
                         if st.button("Show More ▼", use_container_width=True):
                             st.session_state.show_all = True
                             st.rerun()
