@@ -14,7 +14,7 @@ GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
 genai.configure(api_key=GEMINI_API_KEY)
 
 # --------------------------------------------------------------------------------
-# 2. RAW CSS (Vertical 3D Depth Effect + Layout Tweaks)
+# 2. RAW CSS
 # --------------------------------------------------------------------------------
 st.markdown("""
 <style>
@@ -37,6 +37,7 @@ st.markdown("""
         margin: 0 auto;
     }
 
+    /* Search Bar Styling */
     .stTextInput div[data-baseweb="base-input"] {
         background-color: #2a1c3d !important;
         border: 1px solid rgba(255, 255, 255, 0.3) !important;
@@ -50,6 +51,7 @@ st.markdown("""
         padding: 0.75rem 1rem !important;
     }
     
+    /* Standard Button Styling */
     div[data-testid="stButton"] > button {
         background-color: rgba(127, 19, 236, 0.8) !important;
         color: #ffffff !important;
@@ -64,6 +66,43 @@ st.markdown("""
         border-color: rgba(255, 255, 255, 0.9) !important;
     }
 
+    /* LOGO BUTTON OVERRIDES (Makes the button look like a text logo) */
+    .st-key-logo_btn button {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        justify-content: flex-start !important;
+        width: auto !important;
+    }
+    .st-key-logo_btn button p {
+        color: #2dd4bf !important;
+        font-size: 2.2rem !important;
+        font-weight: 900 !important;
+        transition: all 0.2s ease;
+    }
+    .st-key-logo_btn button:hover p {
+        color: #ffffff !important;
+        transform: translateY(-2px);
+        text-shadow: 0 4px 10px rgba(45, 212, 191, 0.4);
+    }
+    .st-key-logo_btn button:hover { background: transparent !important; border: none !important; }
+
+    /* 3D DEPTH FOR MOVIE TILES */
+    div[data-testid="stImage"] img {
+        border-radius: 1rem;
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+        transition: all 0.3s ease;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    div[data-testid="stImage"] img:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 25px rgba(0, 0, 0, 0.8), inset 0 1px 1px rgba(255, 255, 255, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    /* Glass Card Detailed Layout */
     .glass-card {
         backdrop-filter: blur(20px); background-color: rgba(42, 28, 61, 0.4);
         border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 2rem;
@@ -72,7 +111,11 @@ st.markdown("""
     }
     @media (max-width: 768px) { .glass-card { flex-direction: column; gap: 1.5rem; padding: 1.5rem;} }
     
-    .glass-poster-container { flex-shrink: 0; width: 300px; border-radius: 1rem; overflow: hidden; position: relative; }
+    .glass-poster-container { 
+        flex-shrink: 0; width: 300px; border-radius: 1rem; overflow: hidden; position: relative; 
+        box-shadow: 0 15px 30px rgba(0,0,0,0.7); transition: all 0.3s ease; border: 1px solid rgba(255,255,255,0.05);
+    }
+    .glass-poster-container:hover { transform: translateY(-5px); box-shadow: 0 25px 40px rgba(0,0,0,0.9); border: 1px solid rgba(255,255,255,0.2); }
     @media (max-width: 768px) { .glass-poster-container { width: 100%; max-width: 300px; margin: 0 auto;} }
     .glass-poster { width: 100%; height: auto; display: block; border-radius: 1rem; }
     .status-badge { position: absolute; top: 1rem; left: 1rem; padding: 0.25rem 0.75rem; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); border-radius: 0.5rem; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; color: white; }
@@ -84,7 +127,7 @@ st.markdown("""
     .card-overview { font-size: 1.15rem; line-height: 1.6; color: #cbd5e1; font-weight: 300; margin: 0; }
     .divider { width: 100%; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent); margin: 1rem 0; }
     
-    /* NEW VERTICAL 3D TABS */
+    /* Vertical 3D Tabs */
     .provider-row { display: flex; flex-direction: column; gap: 1rem; padding-bottom: 0.5rem; align-items: flex-start; }
     .provider-row a { text-decoration: none !important; width: 100%; max-width: 320px; }
     .provider-pill { 
@@ -110,7 +153,6 @@ st.markdown("""
     }
     .provider-img { width: 3rem; height: 3rem; border-radius: 0.5rem; object-fit: cover; box-shadow: 0 2px 4px rgba(0,0,0,0.4); }
     
-    .logo-text { font-size: 2rem; font-weight: 900; color: #2dd4bf; margin: 0; padding-top: 0.5rem;}
     .main-title { font-size: 3.5rem; font-weight: 800; text-align: center; margin-top: 1rem; margin-bottom: 0.5rem; color: white;}
     .sub-title { font-size: 1.25rem; color: #94a3b8; text-align: center; margin-bottom: 2.5rem; }
     .highlight { color: #2dd4bf; }
@@ -225,7 +267,6 @@ def render_glass_card(media_id, media_type, season=None):
         justwatch_link = providers.get("link", "#")
         for p in unique_providers:
             logo_url = f"https://image.tmdb.org/t/p/original{p['logo_path']}"
-            # Flattened HTML to prevent Streamlit code block parsing, with wrapped anchor tag
             providers_html += f'<a href="{justwatch_link}" target="_blank"><div class="provider-pill"><img src="{logo_url}" class="provider-img" alt="{p["provider_name"]}"><span>{p["provider_name"]}</span></div></a>'
             
     final_html = f"""
@@ -256,13 +297,8 @@ def render_glass_card(media_id, media_type, season=None):
 # --------------------------------------------------------------------------------
 # 6. MAIN APP FLOW
 # --------------------------------------------------------------------------------
-col_logo, col_home = st.columns([5, 1])
-with col_logo:
-    st.markdown('<p class="logo-text">🎬 StreamScout</p>', unsafe_allow_html=True)
-with col_home:
-    if st.button("🏠 Home", use_container_width=True):
-        go_home()
-        st.rerun()
+# Logo acting as a Home Button
+st.button("🎬 StreamScout", key="logo_btn", on_click=go_home)
 
 st.markdown("""
     <div class="main-title">Where is it <span class="highlight">streaming?</span></div>
