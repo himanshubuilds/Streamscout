@@ -33,7 +33,7 @@ OTT_HOME_LINKS = {
 }
 
 # --------------------------------------------------------------------------------
-# 3. RAW CSS (3D Depth, Layout, Custom Branding)
+# 3. RAW CSS (Premium Teal Theme + Logo Spacing)
 # --------------------------------------------------------------------------------
 st.markdown("""
 <style>
@@ -41,11 +41,12 @@ st.markdown("""
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     
+    /* Premium Dark Background: #001219 */
     [data-testid="stAppViewContainer"] {
-        background-color: #191022 !important;
+        background-color: #001219 !important;
         background-image: 
-            radial-gradient(circle at 10% 10%, rgba(127, 19, 236, 0.25) 0%, transparent 40%),
-            radial-gradient(circle at 90% 80%, rgba(20, 184, 166, 0.15) 0%, transparent 40%) !important;
+            radial-gradient(circle at 10% 10%, rgba(0, 95, 115, 0.25) 0%, transparent 40%),
+            radial-gradient(circle at 90% 80%, rgba(10, 147, 150, 0.15) 0%, transparent 40%) !important;
         color: white !important;
         font-family: 'Inter', sans-serif;
     }
@@ -58,8 +59,8 @@ st.markdown("""
 
     /* Search Bar Styling */
     .stTextInput div[data-baseweb="base-input"] {
-        background-color: #2a1c3d !important;
-        border: 1px solid rgba(255, 255, 255, 0.3) !important;
+        background-color: rgba(0, 95, 115, 0.2) !important;
+        border: 1px solid rgba(148, 210, 189, 0.3) !important;
         border-radius: 1rem !important;
     }
     .stTextInput input {
@@ -70,41 +71,42 @@ st.markdown("""
         padding: 0.75rem 1rem !important;
     }
     
-    /* Standard Button Styling */
+    /* Standard Button Styling (#005f73 to #0a9396) */
     div[data-testid="stButton"] > button {
-        background-color: rgba(127, 19, 236, 0.8) !important;
+        background-color: #005f73 !important;
         color: #ffffff !important;
-        border: 1px solid rgba(255, 255, 255, 0.3) !important;
+        border: 1px solid rgba(148, 210, 189, 0.3) !important;
         border-radius: 0.5rem !important;
         width: 100%;
         margin-top: 0.1rem;
     }
     div[data-testid="stButton"] > button p { color: #ffffff !important; font-weight: bold !important; font-size: 1.1rem !important; }
     div[data-testid="stButton"] > button:hover {
-        background-color: rgba(20, 184, 166, 0.9) !important;
-        border-color: rgba(255, 255, 255, 0.9) !important;
+        background-color: #0a9396 !important;
+        border-color: #94d2bd !important;
     }
 
-    /* LOGO BUTTON OVERRIDES */
+    /* LOGO BUTTON OVERRIDES (Added padding, tracking, and margin) */
     .st-key-logo_btn button {
         background: transparent !important;
         border: none !important;
         box-shadow: none !important;
-        padding: 0 !important;
-        margin: 0 !important;
+        padding: 0.5rem 1rem !important;
+        margin: 0.5rem 0 !important;
         justify-content: flex-start !important;
         width: auto !important;
     }
     .st-key-logo_btn button p {
-        color: #2dd4bf !important;
+        color: #94d2bd !important;
         font-size: 2.2rem !important;
         font-weight: 900 !important;
+        letter-spacing: 1px;
         transition: all 0.2s ease;
     }
     .st-key-logo_btn button:hover p {
         color: #ffffff !important;
         transform: translateY(-2px);
-        text-shadow: 0 4px 10px rgba(45, 212, 191, 0.4);
+        text-shadow: 0 4px 10px rgba(148, 210, 189, 0.4);
     }
     .st-key-logo_btn button:hover { background: transparent !important; border: none !important; }
 
@@ -123,9 +125,9 @@ st.markdown("""
 
     /* Glass Card Detailed Layout */
     .glass-card {
-        backdrop-filter: blur(20px); background-color: rgba(42, 28, 61, 0.4);
-        border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 2rem;
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(20px); background-color: rgba(0, 18, 25, 0.6);
+        border: 1px solid rgba(148, 210, 189, 0.15); border-radius: 2rem;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
         padding: 2.5rem; display: flex; gap: 3rem; margin-top: 1rem; position: relative; overflow: hidden;
     }
     @media (max-width: 768px) { .glass-card { flex-direction: column; gap: 1.5rem; padding: 1.5rem;} }
@@ -137,14 +139,14 @@ st.markdown("""
     .glass-poster-container:hover { transform: translateY(-5px); box-shadow: 0 25px 40px rgba(0,0,0,0.9); border: 1px solid rgba(255,255,255,0.2); }
     @media (max-width: 768px) { .glass-poster-container { width: 100%; max-width: 300px; margin: 0 auto;} }
     .glass-poster { width: 100%; height: auto; display: block; border-radius: 1rem; }
-    .status-badge { position: absolute; top: 1rem; left: 1rem; padding: 0.25rem 0.75rem; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); border-radius: 0.5rem; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; color: white; }
+    .status-badge { position: absolute; top: 1rem; left: 1rem; padding: 0.25rem 0.75rem; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); border: 1px solid rgba(148,210,189,0.3); border-radius: 0.5rem; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; color: white; }
     
     .card-details { flex: 1; display: flex; flex-direction: column; gap: 1rem; justify-content: center;}
     .card-title { font-size: 3rem; font-weight: 900; line-height: 1.1; margin: 0; color: white; }
-    .meta-row { display: flex; flex-wrap: wrap; gap: 1rem; font-size: 1rem; color: #cbd5e1; align-items: center; font-weight: 500;}
-    .dot { width: 5px; height: 5px; border-radius: 50%; background-color: #64748b; }
-    .card-overview { font-size: 1.15rem; line-height: 1.6; color: #cbd5e1; font-weight: 300; margin: 0; }
-    .divider { width: 100%; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent); margin: 1rem 0; }
+    .meta-row { display: flex; flex-wrap: wrap; gap: 1rem; font-size: 1rem; color: #94d2bd; align-items: center; font-weight: 500;}
+    .dot { width: 5px; height: 5px; border-radius: 50%; background-color: #0a9396; }
+    .card-overview { font-size: 1.15rem; line-height: 1.6; color: #e0e0e0; font-weight: 300; margin: 0; }
+    .divider { width: 100%; height: 1px; background: linear-gradient(90deg, transparent, rgba(148,210,189,0.3), transparent); margin: 1rem 0; }
     
     /* Vertical 3D Tabs */
     .provider-row { display: flex; flex-direction: column; gap: 1rem; padding-bottom: 0.5rem; align-items: flex-start; }
@@ -152,8 +154,8 @@ st.markdown("""
     .provider-pill { 
         display: flex; align-items: center; gap: 1rem; padding: 0.75rem 1.5rem 0.75rem 0.75rem; 
         border-radius: 1rem; 
-        background: linear-gradient(145deg, rgba(60, 40, 80, 0.8), rgba(20, 10, 30, 0.9));
-        border-top: 1px solid rgba(255, 255, 255, 0.2);
+        background: linear-gradient(145deg, rgba(0, 95, 115, 0.8), rgba(0, 18, 25, 0.9));
+        border-top: 1px solid rgba(148, 210, 189, 0.2);
         border-bottom: 2px solid rgba(0, 0, 0, 0.8);
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.1);
         color: #ffffff; font-size: 1.1rem; font-weight: 700; 
@@ -162,7 +164,7 @@ st.markdown("""
     .provider-pill:hover { 
         transform: translateY(-2px); 
         box-shadow: 0 6px 12px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.2);
-        background: linear-gradient(145deg, rgba(80, 50, 110, 0.9), rgba(30, 15, 45, 0.95));
+        background: linear-gradient(145deg, rgba(10, 147, 150, 0.9), rgba(0, 95, 115, 0.95));
     }
     .provider-pill:active {
         transform: translateY(1px);
@@ -173,8 +175,8 @@ st.markdown("""
     .provider-img { width: 3rem; height: 3rem; border-radius: 0.5rem; object-fit: cover; box-shadow: 0 2px 4px rgba(0,0,0,0.4); }
     
     .main-title { font-size: 3.5rem; font-weight: 800; text-align: center; margin-top: 1rem; margin-bottom: 0.5rem; color: white;}
-    .sub-title { font-size: 1.25rem; color: #94a3b8; text-align: center; margin-bottom: 2.5rem; }
-    .highlight { color: #2dd4bf; }
+    .sub-title { font-size: 1.25rem; color: #94d2bd; text-align: center; margin-bottom: 2.5rem; }
+    .highlight { color: #94d2bd; }
     .not-available { color: #f87171; font-weight: 500; background: rgba(248, 113, 113, 0.1); padding: 0.75rem 1.25rem; border-radius: 0.5rem; border: 1px solid rgba(248, 113, 113, 0.2); display: inline-block;}
 </style>
 """, unsafe_allow_html=True)
@@ -310,7 +312,7 @@ def render_glass_card(media_id, media_type, season=None):
         </div>
         <p class="card-overview">{overview}</p>
         <div class="divider"></div>
-        <p style="color: #94a3b8; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0;">Available in India (IN)</p>
+        <p style="color: #94d2bd; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0;">Available in India (IN)</p>
         <div class="provider-row">
             {providers_html}
         </div>
